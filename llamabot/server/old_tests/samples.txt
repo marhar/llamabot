@@ -1,0 +1,43 @@
+## chat stream
+
+{
+  "model": "llama2",
+  "created_at": "2024-01-22T17:46:56.794128Z",
+  "message": {
+    "role": "assistant",
+    "content": "The"
+  },
+  "done": false
+}
+
+{
+  "model": "llama2",
+  "created_at": "2024-01-22T17:47:01.910854Z",
+  "message": {
+    "role": "assistant",
+    "content": ""
+  },
+  "done": true,
+  "total_duration": 5310600541,
+  "load_duration": 2976958,
+  "prompt_eval_duration": 207168000,
+  "eval_count": 283,
+  "eval_duration": 5098318000
+}
+
+## chat nostream
+
+{
+  "model": "llama2",
+  "created_at": "2024-01-22T17:47:16.713712Z",
+  "message": {
+    "role": "assistant",
+    "content": "The sky appears\nfoo.\n"
+  },
+  "done": true,
+  "total_duration": 7658822833,
+  "load_duration": 2723208,
+  "prompt_eval_duration": 316509000,
+  "eval_count": 403,
+  "eval_duration": 7338397000
+}
