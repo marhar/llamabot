@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+"""Compare two JSON inputs and return True if they have the same structure, False otherwise."""
+import argparse
+import json
+
 def compare_json_by_type(json1, json2):
     # Check if both are dictionaries
     if not isinstance(json1, dict) or not isinstance(json2, dict):
@@ -26,11 +31,12 @@ def compare_json_by_type(json1, json2):
     # If all checks pass
     return True
 
+test = """
 # Example usage
 json1 = {
     "model": "ollama/llama2",
     "created_at": "2024-02-18T16:36:50.239761",
-    "response": "Love is unpredictable and can happen to anyone, even fools. It's a universal emotion beyond logic and reason. Fools may fall in love because they are hopeful, vulnerable, or seeking connection and happiness. Ultimately, the heart wants what it wants, regardless of whether one is deemed a fool or not.",
+    "response": "Love is unpredictable and can happen to anyone.",
     "done": True,
     "context": [0],
     "total_duration": 2486235000,
@@ -56,3 +62,28 @@ json2 = {
 }
 
 print(compare_json_by_type(json1, json2))
+"""
+
+def main():
+    parser = argparse.ArgumentParser(description='Compare two JSON inputs.')
+    parser.add_argument('inputs', nargs=2, help='Two JSON strings or file paths.')
+    parser.add_argument('--files', action='store_true', help='Indicates if inputs are file paths.')
+
+    args = parser.parse_args()
+
+    if args.files:
+        # If --files is specified, treat inputs as file paths
+        with open(args.inputs[0], 'r') as file1, open(args.inputs[1], 'r') as file2:
+            json1 = json.load(file1)
+            json2 = json.load(file2)
+    else:
+        # Otherwise, treat inputs as JSON strings
+        json1 = json.loads(args.inputs[0])
+        json2 = json.loads(args.inputs[1])
+
+    result = compare_json_by_type(json1, json2)
+    print(result)
+
+
+if __name__ == '__main__':
+    main()
