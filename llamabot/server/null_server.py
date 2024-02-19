@@ -1,31 +1,10 @@
 #!/usr/bin/env python
-# Purpose: fastapi server for llamabot
 """
-This is a fastapi server for llamabot. It implements the necessary
-subset of the ollama API, allowing llmlite to call llamabot.
+Purpose: fastapi server for null llamabot server.  It does not llamabot
+processing, but only litellm processing.  It is a placeholder for
+the real llamabot server, exercising the API only.
 
 uvicorn llamabot_server:app --reload
-
-TODO:
-[x] GenerateRequest
-[x] ChatRequest
-[x] /api/generate endpoint
-[x] /api/chat endpoint
-[x] see if there is any useful commonality between the two
-[x] support application/text and application/json
-[x] support streaming responses
-[x] add dev SimpleBot
-[x] code generate/nonstreaming
-[O] code generate/streaming   <-- in progress
-[ ] code chat/nonstreaming
-[ ] code chat/streaming
-[ ] figure out multiple bots/models/services
-[ ] local tests
-[ ] tests under llmlite
-[ ] tests under https://github.com/ivanfioravanti/chatbot-ollama
-[ ] add parms, host, port, bots, debug
-[ ] document
-[ ] add logging
 """
 
 import asyncio
@@ -36,30 +15,28 @@ from typing import List, Optional
 import devtools
 import fastapi
 import pydantic
-import llamabot
+import litellm
+import uvicorn
+from devtools import pprint
 
-app = fastapi.FastAPI()
+class NullBot:
+    def __init__(self, stream: bool, model_name: str):
+        self.stream = stream
+        self.model_name = model_name
+        # TODO: figure out error with ollama/llama2
+        self.model_name = "mistral/mistral-medium"
 
+    def generate_response(self, prompt: str) -> str:
+        return litellm.completion(model=self.model_name, messages=[{"content": prompt, "role": "user"}])
+
+model = "openai/gpt-4"
+messages = [{"content": "respond in 20 words. who are you?", "role": "user"}]
 
 def devbot_gen_instance(stream: bool = True, model_name: str = "mistral/mistral-tiny"):
     """Return a SimpleBot instance for dev and testing."""
-    # Proper bot management is on the todo list.
-    return llamabot.SimpleBot(
-        """"You are specialist in four-line funny couplets, and always
-        answer in that way.  Don't explain anything else.""",
-        stream=stream,
-        model_name=model_name,
-    )
+    return NullBot(stream=stream, model_name=model_name)
 
-def devbot_chat_instance(stream: bool = True, model_name: str = "mistral/mistral-tiny"):
-    """Return a SimpleBot instance for dev and testing."""
-    # Proper bot management is on the todo list.
-    return llamabot.SimpleBot(
-        """"You are specialist in four-line funny couplets, and always
-        answer in that way.  Don't explain anything else.""",
-        stream=stream,
-        model_name=model_name,
-    )
+app = fastapi.FastAPI()
 
 
 # -------------------------------------------------------------------------------
@@ -162,96 +139,16 @@ async def api_generate(request: fastapi.Request):
     # /api/generate stream=False
 
     t0 = time.time_ns()
-    devbot = devbot_gen_instance(stream=False)  # TODO: use real bot
+    devbot = NullBot(stream=False, model_name=generate_request.model)
     t1 = time.time_ns()
-    result = devbot(generate_request.prompt)
+    result = devbot.generate_response(generate_request.prompt)
     t2 = time.time_ns()
     devtools.pprint(result)  # TODO: proper logging
 
     return ApiGenerateFinal(
         model=generate_request.model,
         created_at=str(datetime.datetime.now().isoformat()),
-        response="".join(result.content),
-        done=True,
-        context=[0],  # TODO: fill in if possible
-        total_duration=t2 - t0,
-        load_duration=t1 - t0,
-        prompt_eval_count=0,  # TODO: fill in if possible
-        prompt_eval_duration=0,  # TODO: fill in if possible
-        eval_count=0,  # TODO: fill in if possible
-        eval_duration=t2 - t1,
-    )
-
-
-# -------------------------------------------------------------------------------
-# /api/chat
-
-
-class ApiChatMessage(pydantic.BaseModel):
-    role: str  # 'system', 'user', or 'assistant'
-    content: str
-    images: Optional[List[str]] = None
-
-
-class ApiChatRequest(pydantic.BaseModel):
-    model: str
-    messages: List[ApiChatMessage]
-    format: Optional[str] = None
-    options: Optional[dict] = None
-    template: Optional[str] = None
-    stream: Optional[bool] = True
-
-
-@app.post("/api/chat")
-async def api_chat(request: fastapi.Request):
-    """Process /api/generate."""
-    # The ollama API doesn't specify a content type, so we support json and text both.
-    try:
-        data = await request.json()
-    except Exception as e:
-        raise fastapi.HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
-    chat_request = ApiChatRequest(**data)
-
-    devtools.pprint(chat_request)  # TODO: proper logging
-
-    # /api/chat stream=True
-
-    if chat_request.stream:
-
-        async def stream_api_chat():
-            for seq in range(5):
-                # Simulate generating a response
-                response = json.dumps(
-                    {
-                        "seq": seq,
-                        "final": False,
-                        "endpoint": "chat",
-                        "response": f"Response line {seq}",
-                    }
-                )
-                yield response + "\n"
-                await asyncio.sleep(0.5)  # Simulate some processing delay
-            yield json.dumps(
-                {"final": True, "endpoint": "chat", "response": f"Response line {seq}"}
-            ) + "\n"
-
-        return fastapi.responses.StreamingResponse(
-            stream_api_chat(), media_type="text/plain"
-        )
-
-    # /api/chat stream=False
-
-    t0 = time.time_ns()
-    devbot = devbot_chat_instance(stream=False)  # TODO: use real bot
-    t1 = time.time_ns()
-    result = devbot(chat_request.prompt)
-    t2 = time.time_ns()
-    devtools.pprint(result)  # TODO: proper logging
-
-    return ApiGenerateFinal(
-        model=generate_request.model,
-        created_at=str(datetime.datetime.now().isoformat()),
-        response="".join(result.content),
+        response=result.choices[0].message.content,
         done=True,
         context=[0],  # TODO: fill in if possible
         total_duration=t2 - t0,
@@ -264,7 +161,6 @@ async def api_chat(request: fastapi.Request):
 
 
 if __name__ == "__main__":
-    # TODO: add command line arguments for host and port
-    import uvicorn
-
+    # TODO: add command line stuff
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    # uvicorn null_server:app --reload
