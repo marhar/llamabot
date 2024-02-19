@@ -6,27 +6,39 @@ import json
 def compare_json_by_type(json1, json2):
     # Check if both are dictionaries
     if not isinstance(json1, dict) or not isinstance(json2, dict):
+        print("Both inputs must be dictionaries.")
         return False
 
     # Check if both have the same set of keys
     if set(json1.keys()) != set(json2.keys()):
+        print("Both inputs must have the same set of keys.")
+        print(set(json1.keys()) - set(json2.keys()))
+        print(set(json2.keys()) - set(json1.keys()))
         return False
 
     # Check the type of each value for each key
     for key in json1:
         # If types do not match
         if type(json1[key]) != type(json2[key]):
+            print(f"Type mismatch for key {key}: {type(json1[key])} != {type(json2[key])}")
             return False
 
         # If the value is a dictionary, recurse
         if isinstance(json1[key], dict):
             if not compare_json_by_type(json1[key], json2[key]):
+                print(f"Type mismatch for key {key}: {json1[key]} != {json2[key]}")
                 return False
 
         # If the value is a list, check the type of each element in the list
+        # TODO: fix list check
         elif isinstance(json1[key], list):
-            if not all(type(item) == type(json2[key][i]) for i, item in enumerate(json1[key])):
+            if not isinstance(json2[key], list):
+                print(f"Type mismatch for key {key} (list): {json1[key]} != {json2[key]}")
                 return False
+        #elif isinstance(json1[key], list):
+        #    if not all(type(item) == type(json2[key][i]) for i, item in enumerate(json1[key])):
+        #        print(f"Type mismatch for key {key}: {json1[key]} != {json2[key]}")
+        #        return False
 
     # If all checks pass
     return True
