@@ -78,7 +78,6 @@ class ApiGenerateFinal(pydantic.BaseModel):
     context: List[int]
     total_duration: int
     load_duration: int
-    prompt_eval_count: int
     prompt_eval_duration: int
     eval_count: int
     eval_duration: int
@@ -126,7 +125,6 @@ async def api_generate(request: fastapi.Request):
                 context=[0],  # TODO: fill in if possible
                 total_duration=t2 - t0,
                 load_duration=t1 - t0,
-                prompt_eval_count=0,  # TODO: fill in if possible
                 prompt_eval_duration=0,  # TODO: fill in if possible
                 eval_count=0,  # TODO: fill in if possible
                 eval_duration=t2 - t1,
@@ -153,7 +151,6 @@ async def api_generate(request: fastapi.Request):
         context=[0],  # TODO: fill in if possible
         total_duration=t2 - t0,
         load_duration=t1 - t0,
-        prompt_eval_count=0,  # TODO: fill in if possible
         prompt_eval_duration=0,  # TODO: fill in if possible
         eval_count=0,  # TODO: fill in if possible
         eval_duration=t2 - t1,
