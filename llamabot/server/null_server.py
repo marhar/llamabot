@@ -45,15 +45,6 @@ class NullBot:
         )
 
 
-model = "openai/gpt-4"
-messages = [{"content": "respond in 20 words. who are you?", "role": "user"}]
-
-
-def devbot_gen_instance(stream: bool = True, model_name: str = "mistral/mistral-tiny"):
-    """Return a SimpleBot instance for dev and testing."""
-    return NullBot(stream=stream, model_name=model_name)
-
-
 app = fastapi.FastAPI()
 
 

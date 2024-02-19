@@ -20,7 +20,7 @@ else
 fi
 STREAM=true
 
-curl -s http://localhost:$PORT/api/generate -d '{
+curl -s --no-buffer http://localhost:$PORT/api/generate -d '{
   "model": "'$MODEL'",
   "stream": '$STREAM',
   "prompt": "why do fools fall in love? response in 10 words or less."
