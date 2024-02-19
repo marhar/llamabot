@@ -10,6 +10,7 @@ uvicorn llamabot_server:app --reload
 import asyncio
 import datetime
 import json
+import sys
 import time
 from typing import List, Optional
 import devtools
@@ -19,6 +20,7 @@ import litellm
 import uvicorn
 from devtools import pprint
 
+
 class NullBot:
     def __init__(self, stream: bool, model_name: str):
         self.stream = stream
@@ -26,15 +28,31 @@ class NullBot:
         # TODO: figure out error with ollama/llama2
         self.model_name = "mistral/mistral-medium"
 
-    def generate_response(self, prompt: str) -> str:
-        return litellm.completion(model=self.model_name, messages=[{"content": prompt, "role": "user"}])
+    def generate_response_stream(self, prompt: str) -> str:
+        for response in litellm.completion(
+            stream=True,
+            model=self.model_name,
+            messages=[{"content": prompt, "role": "user"}],
+        ):
+            yield response
+
+
+    def generate_response_nostream(self, prompt: str) -> str:
+        return litellm.completion(
+            stream=False,
+            model=self.model_name,
+            messages=[{"content": prompt, "role": "user"}],
+        )
+
 
 model = "openai/gpt-4"
 messages = [{"content": "respond in 20 words. who are you?", "role": "user"}]
 
+
 def devbot_gen_instance(stream: bool = True, model_name: str = "mistral/mistral-tiny"):
     """Return a SimpleBot instance for dev and testing."""
     return NullBot(stream=stream, model_name=model_name)
+
 
 app = fastapi.FastAPI()
 
@@ -97,39 +115,41 @@ async def api_generate(request: fastapi.Request):
     # /api/generate stream=True
 
     if generate_request.stream:
-
         # TODO: need to add a callback to bot.generate_response, or add a generator
         # and yield the delta.
         # https://stackoverflow.com/questions/6433369/how-do-i-use-async-generators-in-python-3-6
         # In generate_response() look for [if self.stream/if delta is not None]
         # to see where either logic would go.
-        # 
+        #
         async def stream_api_generate():
             t0 = time.time_ns()
+            devbot = NullBot(stream=True, model_name=generate_request.model)
             t1 = time.time_ns()
-            for seq in range(5):
-                await asyncio.sleep(0.5)  # Simulate some processing delay
-                yield ApiGenerateResponse(
-                    model=generate_request.model,
-                    created_at=str(datetime.datetime.now().isoformat()),
-                    response=f"Fake {seq} ",
-                    done=False,
-                ).json() + "\n"
-            t2 = time.time_ns()
+            for seq in devbot.generate_response_stream(generate_request.prompt):
+                devtools.pprint(seq)  # TODO: proper logging
+                if seq.choices[0].delta.content is not None:
+                    yield ApiGenerateResponse(
+                        model=generate_request.model,
+                        created_at=str(datetime.datetime.now().isoformat()),
+                        response=seq.choices[0].delta.content,
+                        done=False,
+                    ).json() + "\n"
+                else:
+                    t2 = time.time_ns()
+                    yield ApiGenerateFinal(
+                        model=generate_request.model,
+                        created_at=str(datetime.datetime.now().isoformat()),
+                        response="",
+                        context=[0],  # TODO: fill in if possible
+                        total_duration=t2 - t0,
+                        load_duration=t1 - t0,
+                        prompt_eval_duration=t2 - t1,
+                        eval_count=0,  # TODO: fill in if possible
+                        eval_duration=t2-t1,
+                        done=True,
+                    ).json() + "\n"
 
-            yield ApiGenerateFinal(
-                model=generate_request.model,
-                created_at=str(datetime.datetime.now().isoformat()),
-                response="Fake final",
-                done=True,
-                context=[0],  # TODO: fill in if possible
-                total_duration=t2 - t0,
-                load_duration=t1 - t0,
-                prompt_eval_duration=0,  # TODO: fill in if possible
-                eval_count=0,  # TODO: fill in if possible
-                eval_duration=t2 - t1,
-            ).json() + "\n"
-
+        # TODO: may need to switch to websocket to enforce flushing.
         return fastapi.responses.StreamingResponse(
             stream_api_generate(), media_type="text/json"
         )
@@ -139,9 +159,10 @@ async def api_generate(request: fastapi.Request):
     t0 = time.time_ns()
     devbot = NullBot(stream=False, model_name=generate_request.model)
     t1 = time.time_ns()
-    result = devbot.generate_response(generate_request.prompt)
+    result = devbot.generate_response_nostream(generate_request.prompt)
     t2 = time.time_ns()
     devtools.pprint(result)  # TODO: proper logging
+    sys.stdout.flush()
 
     return ApiGenerateFinal(
         model=generate_request.model,
