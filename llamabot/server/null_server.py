@@ -36,7 +36,6 @@ class NullBot:
         ):
             yield response
 
-
     def generate_response_nostream(self, prompt: str) -> str:
         return litellm.completion(
             stream=False,
@@ -106,12 +105,7 @@ async def api_generate(request: fastapi.Request):
     # /api/generate stream=True
 
     if generate_request.stream:
-        # TODO: need to add a callback to bot.generate_response, or add a generator
-        # and yield the delta.
-        # https://stackoverflow.com/questions/6433369/how-do-i-use-async-generators-in-python-3-6
-        # In generate_response() look for [if self.stream/if delta is not None]
-        # to see where either logic would go.
-        #
+
         async def stream_api_generate():
             t0 = time.time_ns()
             devbot = NullBot(stream=True, model_name=generate_request.model)
@@ -136,7 +130,7 @@ async def api_generate(request: fastapi.Request):
                         load_duration=t1 - t0,
                         prompt_eval_duration=t2 - t1,
                         eval_count=0,  # TODO: fill in if possible
-                        eval_duration=t2-t1,
+                        eval_duration=t2 - t1,
                         done=True,
                     ).json() + "\n"
 
