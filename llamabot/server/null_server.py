@@ -7,18 +7,23 @@ the real llamabot server, exercising the API only.
 uvicorn llamabot_server:app --reload
 """
 
+from datetime import datetime
+from devtools import pprint
+from fastapi import FastAPI
+from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from typing import List, Optional
 import asyncio
 import datetime
-import json
-import sys
-import time
-from typing import List, Optional
 import devtools
 import fastapi
-import pydantic
+import json
 import litellm
+import pydantic
+import sys
+import time
 import uvicorn
-from devtools import pprint
 
 
 class NullBot:
@@ -26,6 +31,7 @@ class NullBot:
         self.stream = stream
         self.model_name = model_name
         # TODO: figure out error with ollama/llama2
+        self.model_name = "openai/gpt-4-turbo-preview"
         self.model_name = "mistral/mistral-medium"
 
     def generate_response_stream(self, prompt: str) -> str:
@@ -104,6 +110,8 @@ async def api_generate(request: fastapi.Request):
 
     # /api/generate stream=True
 
+    # TODO: remove this to diable forced non-streaming
+    generate_request.stream = False
     if generate_request.stream:
 
         async def stream_api_generate():
@@ -161,6 +169,62 @@ async def api_generate(request: fastapi.Request):
         eval_count=0,  # TODO: fill in if possible
         eval_duration=t2 - t1,
     )
+
+# -------------------------------------------------------------------------------
+# /api/tags
+
+class TagsModelDetail(BaseModel):
+    format: str
+    family: str
+    families: Optional[None] = None
+    parameter_size: str
+    quantization_level: str
+
+class TagsModel(BaseModel):
+    name: str
+    modified_at: str
+    size: int
+    digest: str
+    details: TagsModelDetail
+
+class TagsRootModel(BaseModel):
+    models: List[TagsModel]
+
+# Example usage
+data = {
+  "models": [
+    {
+      "name": "TigerAI-latest",
+      "modified_at": "2023-11-04T14:56:49.277302595-07:00",
+      "size": 7365960935,
+      "digest": "9f438cb9cd581fc025612d27f7c1a6669ff83a8bb0ed86c94fcf4c5440555697",
+      "details": {
+        "format": "gguf",
+        "family": "tiger",
+        "families": None,
+        "parameter_size": "13B",
+        "quantization_level": "Q4_0"
+      }
+    },
+    {
+      "name": "TigerAI-with-sql-optimizations",
+      "modified_at": "2023-12-07T09:32:18.757212583-08:00",
+      "size": 3825819519,
+      "digest": "fe938a131f40e6f6d40083c9f0f430a515233eb2edaa6d72eb85c50d64f2300e",
+      "details": {
+        "format": "gguf",
+        "family": "tiger",
+        "families": None,
+        "parameter_size": "7B",
+        "quantization_level": "Q4_0"
+      }
+    }
+  ]
+}
+
+@app.get("/api/tags", response_model=TagsRootModel)
+async def get_tags():
+    return TagsRootModel(**data)
 
 
 if __name__ == "__main__":
