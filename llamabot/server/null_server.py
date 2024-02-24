@@ -25,14 +25,20 @@ import sys
 import time
 import uvicorn
 
+FORCE_NONSTREAM = True
+DEFAULT_MODEL_NAME = "mistral/mistral-medium"
+DEFAULT_MODEL_NAME = "openai/gpt-4-turbo-preview"
+
+LOG = open("/tmp/null_server.log", "a")
+def P(s):
+    print(s, file=LOG, flush=True)
 
 class NullBot:
     def __init__(self, stream: bool, model_name: str):
         self.stream = stream
         self.model_name = model_name
         # TODO: figure out error with ollama/llama2
-        self.model_name = "openai/gpt-4-turbo-preview"
-        self.model_name = "mistral/mistral-medium"
+        self.model_name = DEFAULT_MODEL_NAME
 
     def generate_response_stream(self, prompt: str) -> str:
         for response in litellm.completion(
@@ -43,11 +49,12 @@ class NullBot:
             yield response
 
     def generate_response_nostream(self, prompt: str) -> str:
-        return litellm.completion(
+        response = litellm.completion(
             stream=False,
             model=self.model_name,
             messages=[{"content": prompt, "role": "user"}],
         )
+        return response
 
 
 app = fastapi.FastAPI()
@@ -110,8 +117,10 @@ async def api_generate(request: fastapi.Request):
 
     # /api/generate stream=True
 
-    # TODO: remove this to diable forced non-streaming
-    generate_request.stream = False
+    # Logic to force non-streaming behavior.
+    if FORCE_NONSTREAM:
+        generate_request.stream = False
+
     if generate_request.stream:
 
         async def stream_api_generate():
@@ -121,15 +130,16 @@ async def api_generate(request: fastapi.Request):
             for seq in devbot.generate_response_stream(generate_request.prompt):
                 devtools.pprint(seq)  # TODO: proper logging
                 if seq.choices[0].delta.content is not None:
-                    yield ApiGenerateResponse(
+                    tmp=ApiGenerateResponse(
                         model=generate_request.model,
                         created_at=str(datetime.datetime.now().isoformat()),
                         response=seq.choices[0].delta.content,
                         done=False,
                     ).json() + "\n"
+                    yield tmp
                 else:
                     t2 = time.time_ns()
-                    yield ApiGenerateFinal(
+                    tmp=ApiGenerateFinal(
                         model=generate_request.model,
                         created_at=str(datetime.datetime.now().isoformat()),
                         response="",
@@ -141,10 +151,11 @@ async def api_generate(request: fastapi.Request):
                         eval_duration=t2 - t1,
                         done=True,
                     ).json() + "\n"
+                    yield tmp
 
         # TODO: may need to switch to websocket to enforce flushing.
         return fastapi.responses.StreamingResponse(
-            stream_api_generate(), media_type="text/json"
+            stream_api_generate(), media_type="text/plain"
         )
 
     # /api/generate stream=False
@@ -157,7 +168,7 @@ async def api_generate(request: fastapi.Request):
     devtools.pprint(result)  # TODO: proper logging
     sys.stdout.flush()
 
-    return ApiGenerateFinal(
+    tmp = ApiGenerateFinal(
         model=generate_request.model,
         created_at=str(datetime.datetime.now().isoformat()),
         response=result.choices[0].message.content,
@@ -169,6 +180,8 @@ async def api_generate(request: fastapi.Request):
         eval_count=0,  # TODO: fill in if possible
         eval_duration=t2 - t1,
     )
+    P(tmp.response)
+    return tmp
 
 # -------------------------------------------------------------------------------
 # /api/tags
@@ -194,7 +207,7 @@ class TagsRootModel(BaseModel):
 data = {
   "models": [
     {
-      "name": "TigerAI-latest",
+      "name": "duckdb-llamabot-latest",
       "modified_at": "2023-11-04T14:56:49.277302595-07:00",
       "size": 7365960935,
       "digest": "9f438cb9cd581fc025612d27f7c1a6669ff83a8bb0ed86c94fcf4c5440555697",
@@ -207,7 +220,7 @@ data = {
       }
     },
     {
-      "name": "TigerAI-with-sql-optimizations",
+      "name": "duckdb-v010-sql-optimizations",
       "modified_at": "2023-12-07T09:32:18.757212583-08:00",
       "size": 3825819519,
       "digest": "fe938a131f40e6f6d40083c9f0f430a515233eb2edaa6d72eb85c50d64f2300e",
