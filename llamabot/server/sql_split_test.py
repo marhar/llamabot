@@ -81,5 +81,20 @@ class TestProcessSQLWithDuckDB(unittest.TestCase):
         result = process_sql(self.conn, input_string)
         self.assertEqual(result.strip(), expected_output.strip())
 
+
+    def test_non_dql(self):
+        input_string = (
+            "This is introductory text.\n"
+            "```sql\nCREATE TABLE x(a INT);\n```\n"
+            "This is concluding text."
+        )
+        expected_output = (
+            "This is introductory text.\n"
+            "```sql\nCREATE TABLE x(a INT);\n```\n"
+            "This is concluding text.\n"
+        )
+        result = process_sql(self.conn, input_string)
+        self.assertEqual(result.strip(), expected_output.strip())
+
 if __name__ == '__main__':
     unittest.main()

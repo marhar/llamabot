@@ -38,13 +38,17 @@ def process_sql(conn, input_string: str) -> str:
             output_string += suffix_sql
 
 
-            output_string += prefix_normal
             try:
+                # TODO: if it's an insert, then select the rows?
                 result = conn.sql(sql_query)
-                output_string += str(result)
+                if result:
+                    output_string += prefix_normal
+                    output_string += str(result)
+                    output_string += suffix_normal
             except Exception as e:
+                output_string += prefix_normal
                 output_string += 'SQL Execution Error: ' + str(e) + '\n'
-            output_string += suffix_normal
+                output_string += suffix_normal
             buffer = []
         else:
             buffer.append(line)
