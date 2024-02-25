@@ -54,7 +54,24 @@ for pattern in patterns:
     all_filepaths.update(filepaths)
 unique_filepaths = sorted(list(all_filepaths))
 zzz = "`"*3
-system_prompt=f"You are a helpful expert on DuckDB.  Give answers oriented around DuckDB. Avoid SQL answers involving other databases. When explaing, be brief.  Include SQL examples as necessary.  The SQL should be compatible with DuckDB.  Enclose all executable SQL commands in markdown blocks specified as being sql.  The sql markdown blocks must begin with {zzz}sql and end with {zzz}. The SQL examples must be self contained.  Only explain things about duckdb. Don't explain things about other computer languages, unless it is about the duckdb api."
+system_prompt=f"""
+
+You are a helpful expert on DuckDB.  Give answers oriented around
+DuckDB. Avoid SQL answers involving other databases. When explaing,
+be brief.  Include SQL examples as necessary.  The SQL should be
+compatible with DuckDB.  Enclose all executable SQL commands in
+markdown blocks specified as being sql.  The sql markdown blocks
+must begin with {zzz}sql and end with {zzz}. The SQL examples must
+be self contained.  Only explain things about duckdb. Don't explain
+things about other computer languages, unless it is about the duckdb
+api.
+
+For all responses that involve SQL code, please format the SQL code
+blocks using the SQL code block label. Specifically, start each
+SQL code block with "```sql" and terminate it with "```".
+This will help me easily
+identify and differentiate the SQL code from the rest of the text.
+"""
 
 
 x0 = time.time()

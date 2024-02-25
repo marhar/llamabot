@@ -24,7 +24,8 @@ def process_sql(conn, input_string: str) -> str:
 
 
     for line in lines:
-        if line.strip() == '```sql':  # Start of SQL block
+        # TODO: nuke vbnet once we consistently get sql from mistral-medium
+        if line.strip() in ('```sql', '```vbnet'):  # Start of SQL block
             if not is_sql_block:  # Only switch mode if not already in a SQL block
                 is_sql_block = True
                 if buffer:  # If there's text in the buffer, append it first
