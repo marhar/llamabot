@@ -1,6 +1,7 @@
 import duckdb
 
-def process_sql(input_string):
+# TODO: pass in a connection to the DuckDB database
+def process_sql(conn, input_string: str) -> str:
     """
     Processes an input string to find SQL blocks, executes them using DuckDB,
     and returns a string including both the SQL commands and their results.
@@ -16,7 +17,11 @@ def process_sql(input_string):
     buffer = []
     output_string = ""
 
-    conn = duckdb.connect()  # Connect to an in-memory DuckDB database
+    prefix_sql = "```sql\n"
+    suffix_sql = "```\n"
+    prefix_normal = "```\n"
+    suffix_normal = "```\n"
+
 
     for line in lines:
         if line.strip() == '```sql':  # Start of SQL block
@@ -28,13 +33,18 @@ def process_sql(input_string):
         elif line.strip() == '```' and is_sql_block:  # End of SQL block
             is_sql_block = False
             sql_query = '\n'.join(buffer)
+            output_string += prefix_sql
             output_string += sql_query + '\n'
+            output_string += suffix_sql
 
+
+            output_string += prefix_normal
             try:
                 result = conn.sql(sql_query)
-                output_string += str(result) + '\n'
+                output_string += str(result)
             except Exception as e:
                 output_string += 'SQL Execution Error: ' + str(e) + '\n'
+            output_string += suffix_normal
             buffer = []
         else:
             buffer.append(line)
@@ -42,14 +52,17 @@ def process_sql(input_string):
     # Add remaining content
     if buffer:
         if is_sql_block:  # If still in an SQL block, try to execute
+            output_string += prefix_sql
             sql_query = '\n'.join(buffer)
+            output_string += suffix_sql
+            output_string += prefix_normal
             try:
                 result = conn.sql(sql_query)
                 output_string += sql_query + '\n' + str(result) + '\n'
             except Exception as e:
                 output_string += 'SQL Execution Error: ' + str(e) + '\n'
+            output_string += suffix_normal
         else:  # If not, just append the text
             output_string += '\n'.join(buffer) + '\n'
 
-    conn.close()  # Close the database connection
     return output_string

@@ -2,18 +2,21 @@
 import duckdb
 import sql_split
 
+conn = duckdb.connect()  # Connect to an in-memory DuckDB database
+def testit(input_string):
+    x = sql_split.process_sql(conn, input_string)
+    print(x)
+
 # Example usage:
-input_string = """
+testit("""
 This is some introductory text.
 ```sql
 SELECT 1 as x;
 ```
 This is some concluding text.
-"""
-x = sql_split.process_sql(input_string)
-print(x)
+""")
 
-input_string = """
+testit("""
 aaa
 ```sql
 SELECT 1 as x;
@@ -27,11 +30,9 @@ ccc
 ddd
 ```
 eee
-"""
-x = sql_split.process_sql(input_string)
-print(x)
+""")
 
-input_string = """
+testit("""
 aaa
 ```sql
 SELECT 1 as x;
@@ -45,31 +46,27 @@ ccc
 ddd
 ```
 eee
-"""
-x = sql_split.process_sql(input_string)
-print(x)
+""")
 
-input_string = """
+testit("""
 ```sql
 select 2 as y;
 ```
-"""
-x = sql_split.process_sql(input_string)
-print(x)
+""")
 
-input_string = """
+testit("""
 ```sql
 select 2 as y;
-"""
-x = sql_split.process_sql(input_string)
-print(x)
+""")
 
-input_string = """
+testit("""
 aaa
 ```sql
 select a from foo;
 ```
 bbb
-"""
-x = sql_split.process_sql(input_string)
-print(x)
+""")
+
+testit("""
+zzz
+""")
