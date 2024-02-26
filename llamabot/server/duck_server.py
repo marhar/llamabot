@@ -194,9 +194,10 @@ class TagsRootModel(BaseModel):
 
 # Example usage
 data = {
+
   "models": [
     {
-      "name": "duckdb-llamabot-latest",
+      "name": "RepoBot(mjl/llamabot)",
       "modified_at": "2023-11-04T14:56:49.277302595-07:00",
       "size": 7365960935,
       "digest": "9f438cb9cd581fc025612d27f7c1a6669ff83a8bb0ed86c94fcf4c5440555697",
@@ -208,6 +209,33 @@ data = {
         "quantization_level": "Q4_0"
       }
     },
+    {
+      "name": "QueryBot(duckdb-latest)",
+      "modified_at": "2023-11-04T14:56:49.277302595-07:00",
+      "size": 7365960935,
+      "digest": "9f438cb9cd581fc025612d27f7c1a6669ff83a8bb0ed86c94fcf4c5440555697",
+      "details": {
+        "format": "gguf",
+        "family": "tiger",
+        "families": None,
+        "parameter_size": "13B",
+        "quantization_level": "Q4_0"
+      }
+    },
+    {
+      "name": "QueryBot(duckdb-0.9.2)",
+      "modified_at": "2023-11-04T14:56:49.277302595-07:00",
+      "size": 7365960935,
+      "digest": "9f438cb9cd581fc025612d27f7c1a6669ff83a8bb0ed86c94fcf4c5440555697",
+      "details": {
+        "format": "gguf",
+        "family": "tiger",
+        "families": None,
+        "parameter_size": "13B",
+        "quantization_level": "Q4_0"
+      }
+    },
+
     {
       "name": "duckdb-v010-sql-optimizations",
       "modified_at": "2023-12-07T09:32:18.757212583-08:00",

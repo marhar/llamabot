@@ -12,6 +12,15 @@ def process_sql(conn, input_string: str) -> str:
     Returns:
     - str: A string with SQL blocks followed by their execution results.
     """
+
+    # Replace any "```" with "```sql" to ensure the SQL blocks are correctly formatted
+    # "No hard feelings, but I'm going to replace all your SQL code blocks with SQL code blocks."
+    input_string = input_string.replace('```\nSELECT', '```sql\nSELECT')
+    input_string = input_string.replace('```\nWITH', '```sql\nSELECT')
+    input_string = input_string.replace('```vbnet\nSELECT', '```sql\nSELECT')
+    ###input_string = re.sub(r'(?m)```\n(SELECT|WITH)', '```sql\n\1', input_string)
+
+
     lines = input_string.split('\n')
     is_sql_block = False
     buffer = []
@@ -25,7 +34,7 @@ def process_sql(conn, input_string: str) -> str:
 
     for line in lines:
         # TODO: nuke vbnet once we consistently get sql from mistral-medium
-        if line.strip() in ('```sql', '```vbnet'):  # Start of SQL block
+        if line.strip() == "```sql":
             if not is_sql_block:  # Only switch mode if not already in a SQL block
                 is_sql_block = True
                 if buffer:  # If there's text in the buffer, append it first
